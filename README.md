@@ -144,19 +144,20 @@ Reference: [Visual-PDE: Grey-Scott Model](https://visualpde.com/nonlinear-physic
 
 
 ### Discrete Laplacian + Periodic BC
-$$
+
+```math
 \begin{align*}
 (\nabla^2 u)_{i,j} 
 &= 
 -4\,u_{i,j} 
-+ u_{i+1,j} + u_{i-1,j} + u_{i,j+1} + u_{i,j-1} \\
-
++ u_{i+1,j} + u_{i-1,j} + u_{i,j+1} + u_{i,j-1}
+\\[1ex]
 (\nabla^2 v)_{i,j} 
 &= 
 -4\,v_{i,j} 
 + v_{i+1,j} + v_{i-1,j} + v_{i,j+1} + v_{i,j-1}
 \end{align*}
-$$
+```
 
 > **Discrete Laplacian:** Approximates diffusion of each species ($u$ or $v$) with a 4-neighbor stencil operation </br>
 > **Periodic BC:** Edges “wrap around,” so indices at the boundary (e.g., $i=0$ or $j=N-1$)
@@ -164,21 +165,21 @@ $$
 
 ### Forward Operators (Euler‐step, $\Delta t = 1$)
 
-$$
-\begin{aligned}
-u_{i,j} &\leftarrow 
+```math
+\begin{align*}
+u_{i,j} &\leftarrow\,
 u_{i,j}
 + d_u\,(\nabla^2 u)_{i,j}
 - R_{i,j}
 + F\,\bigl(1 - u_{i,j}\bigr),
 \\[1ex]
-v_{i,j} &\leftarrow 
+v_{i,j} &\leftarrow\,
 v_{i,j}
 + d_v\,(\nabla^2 v)_{i,j}
 + R_{i,j}
 - (F + k)\,v_{i,j}.
-\end{aligned}
-$$
+\end{align*}
+```
 
 > **Interpretation:** New value is the old value plus the sum of all terms (`diffusion`, `reaction`, `feed`, and `kill`) at time $t$
 
