@@ -9,7 +9,7 @@ from arguments import process_args
 DEFAULT_FPS = 20
 DEFAULT_DELAY = 3
 
-def extract_record_frames(record) -> np.ndarray:
+def extract_record_frames(record, prefix:str) -> Tuple[np.ndarray, List[int]]:
     """
     Given an h5py Group record with a /image/ and /meta/ subgroup,
     extract all V state frames in chronological order.
@@ -20,13 +20,14 @@ def extract_record_frames(record) -> np.ndarray:
     Raises:
         KeyError if no V-frame data is found.
     """
+    
+
     image_dict = record.get("image", {})
     meta_dict = record.get("meta", {})
 
-    # pattern for "v_state_initial", "v_state_<step>", "v_state_final"
-    pattern = re.compile(r"v_state_(\d+)$")
-    initial_image_key = "v_state_initial"
-    final_image_key = "v_state_final"
+    pattern = re.compile(fr"{prefix}_state_(\d+)$")
+    initial_image_key = f"{prefix}_state_initial"
+    final_image_key = f"{prefix}_state_final"
     iteration_meta_key = "total_iterations"
 
     if initial_image_key not in image_dict:
@@ -35,18 +36,18 @@ def extract_record_frames(record) -> np.ndarray:
         raise KeyError(f"Missing '{final_image_key}' in image group")
     elif iteration_meta_key not in meta_dict:
         raise KeyError(f"Missing '{iteration_meta_key}' in meta group")
-
+    
     total_iterations = meta_dict[iteration_meta_key]
 
     # validate initial frame (step = 0)
     initial_state = image_dict[initial_image_key][()]
     if not isinstance(initial_state, np.ndarray) or initial_state.ndim != 2:
-        raise ValueError("'v_state_initial' must be a 2D NumPy array")
+        raise ValueError(f"'{initial_image_key}' must be a 2D NumPy array")
 
     #validate final frame (step = final)
     final_state = image_dict[final_image_key][()]
     if not isinstance(final_state, np.ndarray) or final_state.ndim != 2:
-        raise ValueError("'v_state_final' must be a 2D NumPy array")
+        raise ValueError(f"'{final_image_key}' must be a 2D NumPy array")
 
     # get intermediate frames and iterations
     states: List[Tuple[int, np.ndarray]] = []
@@ -80,13 +81,14 @@ def extract_record_frames(record) -> np.ndarray:
     frames.append(final_state)
 
     # stack all frames into a single 3D array
-    frames_stack = np.stack(frames, axis=0)  # shape: (num_frames, N, N)
+    frames_stack = np.stack(frames, axis=0)   # shape: (num_frames, N, N)
 
     return frames_stack, steps
 
 
 def save_record_frames(
-    record: dict,
+    frames: np.ndarray,
+    steps: list,
     *,
     file_path: str,
     fps: int = DEFAULT_FPS,
@@ -111,7 +113,6 @@ def save_record_frames(
         ValueError: If `frames` is not 3D.
     """
 
-    frames, steps = extract_record_frames(record)
 
     if frames.ndim != 3:
         raise ValueError("frames must be a 3D array of shape (N, H, W)")
@@ -130,7 +131,7 @@ def save_record_frames(
         vmin=0.0,
         vmax=1.0
     )
-    title_text = ax.set_xlabel(f"t = {steps[0]}", fontsize=16, labelpad=20)
+    title_text = ax.set_xlabel(fr"$t$ = {steps[0]}", fontsize=16, labelpad=20)
 
     ax.grid(False)
     ax.set_xticks([])
@@ -141,7 +142,7 @@ def save_record_frames(
     def _render(i: int):
         idx = frame_indices[i]
         img.set_data(frames[idx])
-        title_text.set_text(f"t = {steps[idx]}")
+        title_text.set_text(fr"$t$ = {steps[idx]}")
         return (img, title_text)
 
     fps2ms = 1000 / fps
@@ -156,7 +157,6 @@ def save_record_frames(
 
     writer = animate.PillowWriter(fps=fps, metadata={"loop": 0})
     anim.save(file_path, dpi=H, writer=writer)
-
     plt.close(fig)
 
 
@@ -182,14 +182,15 @@ def save_record_images(
     fig, axes = plt.subplots(2, 2, figsize=(8, 8))
     flat_axes = axes.flatten()
     image_dict = record['image']
+    total_iterations = record['meta']["total_iterations"]
     stats_dict = statistics.get('image', {}) if statistics else {}
     
 
     fields = [
-        ("u_state_initial", "U: Initial State"),
-        ("u_state_final", "U: Final State"),
-        ("v_state_initial", "V: Initial State"),
-        ("v_state_final", "V: Final State"),
+        ("u_state_initial", r"$U_0$: Initial State"),
+        ("u_state_final", fr"$U_{total_iterations}$: Final State"),
+        ("v_state_initial", r"$V_0$: Initial State"),
+        ("v_state_final", fr"$U_{total_iterations}$: Final State"),
     ]
 
     for idx, (img_key, img_label) in enumerate(fields):
@@ -205,7 +206,7 @@ def save_record_images(
         ax.set_xticks([])
         ax.set_yticks([])
 
-    fig.suptitle(title, fontsize=14)
+    fig.suptitle(fr"Concentration $U_t$ vs $V_t$: {title}", fontsize=14)
     plt.tight_layout()
     fig.savefig(file_path)
     plt.close(fig)
@@ -245,18 +246,26 @@ def visualize_samples(args):
 
         pattern = meta_dict['pattern_name']
         seed = meta_dict['random_seed']
-        iterations = meta_dict['total_iterations']
 
-        title = f"Pattern: {pattern.title().replace('_',' ')} — Seed #{seed} — {iterations} Steps"
+        title = f"{pattern.title().replace('_',' ')} — Seed #{seed}"
+        file_prefix = f"{DATATYPE_NAME}_{pattern}_{seed}"
 
-        gif_path = os_path.join(output_folder,  f"{DATATYPE_NAME}_{pattern}_{seed}.gif")
-        save_record_frames(record, fps=fps, delay=delay, title=title, cmap=gif_cmap, file_path=gif_path)
-        logger.info(f"Saved test gif → {gif_path}")
-
-        image_path = os_path.join(output_folder,  f"{DATATYPE_NAME}_{pattern}_{seed}.png")
-        save_record_images(record, statistics=global_statistics, title=title, cmap=image_cmap, file_path=image_path)
+        image_path = os_path.join(output_folder,  f"{file_prefix}_compare.png")
+        save_record_images(record, statistics=global_statistics, title=rf"Substrate $U_t$ vs Activator $V_t$: {title}", cmap=image_cmap, file_path=image_path)
         logger.info(f"Saved test images → {image_path}")
 
+        for prefix, label in zip(['u', 'v'], ['substrate', 'activator']):
+            frames, steps = extract_record_frames(record, prefix=prefix)
+            gif_path = os_path.join(output_folder,  f"{file_prefix}_{label}_{prefix}.gif")
+            gif_title = rf"{label.title()} ${prefix.upper()}_t$: {title}"
+            save_record_frames(frames, 
+                            steps, 
+                            fps=fps, 
+                            delay=delay, 
+                            title=gif_title, 
+                            cmap=gif_cmap, 
+                            file_path=gif_path)
+            logger.info(f"Saved test {label} {prefix} gif → {gif_path}")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# GREY_SCOTT_SIMULATION
+# GREYSCOTT_SIMULATION
 
 ## Create and activate Conda environment
 
@@ -11,17 +11,6 @@ conda activate grey_scott
 ### Notes
 - Most of the packages are common, so you may already have these installed
 
-## Grey-Scott Patterns
-
-| Pattern        | Feed  | Kill  | du   | dv   |
-|----------------|-------|-------|------|------|
-| labyrinthine   | 0.037 | 0.060 | 0.16 | 0.08 |
-| spots          | 0.029 | 0.062 | 0.16 | 0.08 |
-| holes          | 0.039 | 0.058 | 0.16 | 0.08 |
-| worms          | 0.078 | 0.061 | 0.16 | 0.08 |
-| coral_growth   | 0.055 | 0.062 | 0.16 | 0.08 |
-
-> Reference: [Visual-PDE: Grey-Scott Model](https://visualpde.com/nonlinear-physics/gray-scott.html)
 
 ## Test the code
 
@@ -68,6 +57,11 @@ python create_dataset.py \
 --save-states "first-20,interval-100"
 ```
 
+> Each simulation run uses a unique seed in range [`--min-seed`, `--max-seed`]
+> - This allows simulations to have variable outputs that can be reproduced
+> - A random pattern preset is selected (w/ seeded rng)
+> - Initial states for `U` and `V` are randomly initialized with patches
+> - A patch is "born" or not based on the `--patch-prob` 
 
 ## Visualize a dataset
 
@@ -101,14 +95,90 @@ python visualize_dataset.py \
 --image-cmap "seismic"
 ```
 
-## Example Patterns
-### Coral Growth
-![Coral Growth](./images/greyscott_coral_growth_42.gif)
-### Labyrinthine
-![Labyrinthine](./images/greyscott_labyrinthine_42.gif)
-### Holes
-![Holes](./images/greyscott_holes_42.gif)
-### Spots
-![Spots](./images/greyscott_spots_42.gif)
-### Worms
-![Worms](./images/greyscott_worms_42.gif)
+## Grey-Scott Pattern Presets
+
+> | Pattern        |$F$ (Feed) | $k$ (Kill) | $d_u$ | $d_v$ |
+> |----------------|-------|-------|------|------|
+> | Coral Growth   | 0.055 | 0.062 | 0.16 | 0.08 |
+> | Labyrinthine   | 0.037 | 0.060 | 0.16 | 0.08 |
+> | Holes          | 0.039 | 0.058 | 0.16 | 0.08 |
+> | Spots          | 0.029 | 0.062 | 0.16 | 0.08 |
+> | Worms          | 0.078 | 0.061 | 0.16 | 0.08 |
+
+Reference: [Visual-PDE: Grey-Scott Model](https://visualpde.com/nonlinear-physics/gray-scott.html)
+
+<img src="./images/greyscott_coral_growth_20_substrate_u.gif" alt="Coral Growth Substrate" width="30%" />
+<img src="./images/greyscott_coral_growth_20_activator_v.gif" alt="Coral Growth Activator" width="30%" />
+
+<img src="./images/greyscott_labyrinthine_20_substrate_u.gif" alt="Labyrinthine Substrate" width="30%" />
+<img src="./images/greyscott_labyrinthine_20_activator_v.gif" alt="Labyrinthine Activator" width="30%" />
+
+<img src="./images/greyscott_holes_20_substrate_u.gif" alt="Holes Substrate" width="30%" />
+<img src="./images/greyscott_holes_20_activator_v.gif" alt="Holes Activator" width="30%" />
+
+<img src="./images/greyscott_spots_20_substrate_u.gif" alt="Spots Substrate" width="30%" />
+<img src="./images/greyscott_spots_20_activator_v.gif" alt="Spots Activator" width="30%" />
+
+<img src="./images/greyscott_worms_20_substrate_u.gif" alt="Worms Substrate" width="30%" />
+<img src="./images/greyscott_worms_20_activator_v.gif" alt="Worms Activator" width="30%" />
+
+## Grey-Scott Equations
+
+### Definitions
+
+> | Symbol     | Category      | Description                                         |
+> |------------|---------------|-----------------------------------------------------|
+> | $u_{i,j}$  | Concentration | Substrate U concentration at grid cell $(i,j)$      |
+> | $v_{i,j}$  | Concentration | Activator V concentration at grid cell $(i,j)$      |
+> | $d_{u}$    | Diffusion     | Controls how quickly U spreads across the grid      |
+> | $d_{v}$    | Diffusion     | Controls how quickly V spreads across the grid      |
+> | $F$        | Rate          | Adds $F\,(1 - u_{i,j})$ to $u_{i,j}$ each step      |
+> | $k$        | Rate          | Subtracts $k\,v_{i,j}$ from $v_{i,j}$ each step     |
+
+
+
+### Discrete Laplacian + Periodic BC
+$$
+\begin{align*}
+(\nabla^2 u)_{i,j} 
+&= 
+-4\,u_{i,j} 
++ u_{i+1,j} + u_{i-1,j} + u_{i,j+1} + u_{i,j-1} \\
+
+(\nabla^2 v)_{i,j} 
+&= 
+-4\,v_{i,j} 
++ v_{i+1,j} + v_{i-1,j} + v_{i,j+1} + v_{i,j-1}
+\end{align*}
+$$
+
+> **Discrete Laplacian:** Approximates diffusion of each species ($u$ or $v$) with a 4-neighbor stencil operation </br>
+> **Periodic BC:** Edges “wrap around,” so indices at the boundary (e.g., $i=0$ or $j=N-1$)
+
+
+### Forward Operators (Euler‐step, $\Delta t = 1$)
+
+$$
+\begin{aligned}
+u_{i,j} &\leftarrow 
+u_{i,j}
++ d_u\,(\nabla^2 u)_{i,j}
+- R_{i,j}
++ F\,\bigl(1 - u_{i,j}\bigr),
+\\[1ex]
+v_{i,j} &\leftarrow 
+v_{i,j}
++ d_v\,(\nabla^2 v)_{i,j}
++ R_{i,j}
+- (F + k)\,v_{i,j}.
+\end{aligned}
+$$
+
+> **Interpretation:** New value is the old value plus the sum of all terms (`diffusion`, `reaction`, `feed`, and `kill`) at time $t$
+
+> | Term       | Expression                              | Description                                                   |
+> |------------|-----------------------------------------|---------------------------------------------------------------|
+> | Diffusion  | $d_{u}\,(\nabla^{2}u)$, $d_{v}\,(\nabla^{2}v)$ | Spreads each species to its four neighbors                    |
+> | Reaction   | $R_{i,j} = u_{i,j}\,(v_{i,j})^{2}$     | Removes $u_{i,j}$ and adds $v_{i,j}$                      |
+> | Feed       | $F\,(1 - u_{i,j})$                   | Increases $u$ when $u_{i,j} < 1$                            |
+> | Kill       | $(F + k)\,v_{i,j}$                    | Decreases $v$ by combined feed-kill and decay               |

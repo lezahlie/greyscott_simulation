@@ -47,6 +47,7 @@ def run_grayscott_simulation(
 
     # Prepare to collect intermediate v-frames
     v_frames: Dict[str, np.ndarray] = {}
+    u_frames: Dict[str, np.ndarray] = {}
     u, v = u_init.copy(), v_init.copy()
 
     save_states_predicate = create_save_states_predicate(save_states)
@@ -60,7 +61,7 @@ def run_grayscott_simulation(
 
         if save_states_predicate(iteration):
             v_frames[f"v_state_{int(iteration)}"] = v.copy()
-
+            u_frames[f"u_state_{int(iteration)}"] = u.copy()
 
     u_final, v_final = u.copy(), v.copy()
 
@@ -77,8 +78,9 @@ def run_grayscott_simulation(
 
     images: Dict[str, Any] = {
         'u_state_initial': u_init,
-        'v_state_initial': v_init,
         'u_state_final': u_final,
+        **u_frames,
+        'v_state_initial': v_init,
         'v_state_final': v_final,
         **v_frames
     }

@@ -31,6 +31,7 @@ def simulate_patterns(
 
         # Prepare to collect intermediate v-frames
         v_frames: Dict[str, np.ndarray] = {}
+        u_frames: Dict[str, np.ndarray] = {}
         u, v = u_init.copy(), v_init.copy()
 
         for iteration in range(1,max_iterations+1):
@@ -42,14 +43,17 @@ def simulate_patterns(
 
             if save_states_predicate(iteration):
                 v_frames[f"v_state_{int(iteration)}"] = v.copy()
+                u_frames[f"u_state_{int(iteration)}"] = u.copy()
+
 
         u_final, v_final = u.copy(), v.copy()
 
         result = {
             'image': {
                 'u_state_initial': u_init,
-                'v_state_initial': v_init,
                 'u_state_final': u_final,
+                **u_frames,
+                'v_state_initial': v_init,
                 'v_state_final': v_final,
                 **v_frames
             },
@@ -75,39 +79,45 @@ def visualize_patterns(record, output_path):
 
     pattern = meta_data['pattern_name']
     seed = meta_data['random_seed']
-    iterations = meta_data['total_iterations']
 
-    file_path = os_path.join(output_path,  f"{DATATYPE_NAME}_{pattern}_{seed}.gif")
-    title = f"Pattern: {pattern.title().replace('_',' ')} — Seed #{seed} — {iterations} Steps"
+    title = f"{pattern.title().replace('_',' ')} — Seed #{seed}"
+    file_prefix = f"{DATATYPE_NAME}_{pattern}_{seed}"
 
-    save_record_frames(
-        record,
-        fps=15,
-        delay=3,
-        cmap="turbo",
-        title=title,
-        file_path=file_path
-    )
+    file_paths = []
+    for prefix, label in zip(['u', 'v'], ['substrate', 'activator']):
+        frames, steps = extract_record_frames(record, prefix=prefix)
+        gif_path = os_path.join(output_path,  f"{file_prefix}_{label}_{prefix}.gif")
+        gif_title = rf"{label.title()} ${prefix.upper()}_t$: {title}"
 
-    logger.info(f"Saved test gif → {file_path}")
+        save_record_frames(frames, 
+                            steps, 
+                            fps=15, 
+                            delay=3, 
+                            cmap="turbo", 
+                            title=gif_title, 
+                            file_path=gif_path)
+        logger.info(f"Saved test {label} {prefix} gif → {gif_path}")
+        file_paths.append(str(gif_path))
 
+    image_path = os_path.join(output_path,  f"{file_prefix}_activator_versus_substrate.png")
 
     save_record_images(
         record,
         cmap="seismic",
         title=title,
-        file_path=file_path.replace('.gif', '.png')
+        file_path=image_path
     )
+    file_paths.append(image_path)
 
-    logger.info(f"Saved test image → {file_path}")
-    return str(file_path)
+    logger.info(f"Saved test image → {image_path}")
+    return file_paths
 
 @pytest.mark.parametrize("seed", [20, 42])
 @pytest.mark.parametrize("samples", [1, None])
 def test_all_patterns(seed, samples):
     sim_args = {
         'grid_length': 64,
-        'max_iterations': 1500,
+        'max_iterations': 2000,
         'patch_radius': 2,
         'patch_prob': 0.5,
         'save_states': [("first", 20), ("interval", 20)]
@@ -129,5 +139,6 @@ def test_all_patterns(seed, samples):
     sample_records = read_from_hdf5(dataset_file, sample_size=samples, flatten=False, random_seed=seed)
     logger.info(f"Visualizing {len(sample_records)} sampled records")
     for record in sample_records:
-        gif_path = visualize_patterns(record, output_folder)
-        assert os_path.exists(gif_path), f"Cannot find gif file '{gif_path}'"
+        file_paths = visualize_patterns(record, output_folder)
+        for fp in file_paths:
+            assert os_path.exists(fp), f"Cannot find file path '{fp}'"
