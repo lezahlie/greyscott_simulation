@@ -107,20 +107,26 @@ python visualize_dataset.py \
 
 Reference: [Visual-PDE: Grey-Scott Model](https://visualpde.com/nonlinear-physics/gray-scott.html)
 
-<img src="./images/greyscott_coral_growth_20_substrate_u.gif" alt="Coral Growth Substrate" width="30%" />
-<img src="./images/greyscott_coral_growth_20_activator_v.gif" alt="Coral Growth Activator" width="30%" />
+| Coral Growth (U) | Coral Growth (V) |
+|:----------------:|:----------------:|
+| <img src="./images/greyscott_coral_growth_20_substrate_u.gif" alt="Coral Growth Substrate" width="300"/> | <img src="./images/greyscott_coral_growth_20_activator_v.gif" alt="Coral Growth Activator" width="300"/> |
 
-<img src="./images/greyscott_labyrinthine_20_substrate_u.gif" alt="Labyrinthine Substrate" width="30%" />
-<img src="./images/greyscott_labyrinthine_20_activator_v.gif" alt="Labyrinthine Activator" width="30%" />
+| Labyrinthine (U) | Labyrinthine (V) |
+|:----------------:|:----------------:|
+| <img src="./images/greyscott_labyrinthine_20_substrate_u.gif" alt="Labyrinthine Substrate" width="300"/> | <img src="./images/greyscott_labyrinthine_20_activator_v.gif" alt="Labyrinthine Activator" width="300"/> |
 
-<img src="./images/greyscott_holes_20_substrate_u.gif" alt="Holes Substrate" width="30%" />
-<img src="./images/greyscott_holes_20_activator_v.gif" alt="Holes Activator" width="30%" />
+| Holes (U) | Holes (V) |
+|:---------:|:---------:|
+| <img src="./images/greyscott_holes_20_substrate_u.gif" alt="Holes Substrate" width="300"/> | <img src="./images/greyscott_holes_20_activator_v.gif" alt="Holes Activator" width="300"/> |
 
-<img src="./images/greyscott_spots_20_substrate_u.gif" alt="Spots Substrate" width="30%" />
-<img src="./images/greyscott_spots_20_activator_v.gif" alt="Spots Activator" width="30%" />
+| Spots (U) | Spots (V) |
+|:---------:|:---------:|
+| <img src="./images/greyscott_spots_20_substrate_u.gif" alt="Spots Substrate" width="300"/> | <img src="./images/greyscott_spots_20_activator_v.gif" alt="Spots Activator" width="300"/> |
 
-<img src="./images/greyscott_worms_20_substrate_u.gif" alt="Worms Substrate" width="30%" />
-<img src="./images/greyscott_worms_20_activator_v.gif" alt="Worms Activator" width="30%" />
+| Worms (U) | Worms (V) |
+|:---------:|:---------:|
+| <img src="./images/greyscott_worms_20_substrate_u.gif" alt="Worms Substrate" width="300"/> | <img src="./images/greyscott_worms_20_activator_v.gif" alt="Worms Activator" width="300"/> |
+
 
 ## Grey-Scott Equations
 
