@@ -160,7 +160,7 @@ Reference: [Visual-PDE: Grey-Scott Model](https://visualpde.com/nonlinear-physic
 ```
 
 > **Discrete Laplacian:** Approximates diffusion of each species ($u$ or $v$) with a 4-neighbor stencil operation </br>
-> **Periodic BC:** Edges “wrap around,” so indices at the boundary (e.g., $i=0$ or $j=N-1$)
+> **Periodic BC:** Edges “wrap around” so boundary cells are connected (or adjacent)
 
 
 ### Forward Operators (Euler‐step, $\Delta t = 1$)
@@ -171,13 +171,13 @@ u_{i,j} &\leftarrow\,
 u_{i,j}
 + d_u\,(\nabla^2 u)_{i,j}
 - R_{i,j}
-+ F\,\bigl(1 - u_{i,j}\bigr),
++ F\,\bigl(1 - u_{i,j}\bigr)
 \\[1ex]
 v_{i,j} &\leftarrow\,
 v_{i,j}
 + d_v\,(\nabla^2 v)_{i,j}
 + R_{i,j}
-- (F + k)\,v_{i,j}.
+- (F + k)\,v_{i,j}
 \end{align*}
 ```
 
