@@ -188,9 +188,9 @@ def save_record_images(
 
     fields = [
         ("u_state_initial", r"$U_0$: Initial State"),
-        ("u_state_final", fr"$U_{total_iterations}$: Final State"),
+        ("u_state_final", fr"$U_{{{total_iterations}}}$: Final State"),
         ("v_state_initial", r"$V_0$: Initial State"),
-        ("v_state_final", fr"$U_{total_iterations}$: Final State"),
+        ("v_state_final", fr"$U_{{{total_iterations}}}$: Final State"),
     ]
 
     for idx, (img_key, img_label) in enumerate(fields):
