@@ -59,9 +59,9 @@ python create_dataset.py \
 
 > Each simulation run uses a unique seed in range [`--min-seed`, `--max-seed`]
 > - This allows simulations to have variable outputs that can be reproduced
-> - A random pattern preset is selected (w/ seeded rng)
-> - Initial states for `U` and `V` are randomly initialized with patches
-> - A patch is "born" or not based on the `--patch-prob` 
+> - Initial concentration fields for `U` and `V` are randomized independently
+> - A preset pattern configuration is selected at random 
+> - A patch is "born" or not based on the `--patch-prob`
 
 ## Visualize a dataset
 

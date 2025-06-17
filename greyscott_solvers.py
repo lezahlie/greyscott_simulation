@@ -7,7 +7,7 @@ from utilities import Any, Dict, List, Optional, Tuple, np
 MIN_COVERAGE_RATIO = 0.1
 MIN_SPACING_FACTOR = 2.5
 
-def get_num_patches(grid_size: int, patch_radius: int, patch_prob: float, rng: np.random.Generator) -> int:
+def _get_num_patches(grid_size: int, patch_radius: int, patch_prob: float, rng: np.random.Generator) -> int:
     assert 2 * patch_radius < grid_size, "Patch radius too large for grid"
 
     effective_diameter = MIN_COVERAGE_RATIO * patch_radius
@@ -24,7 +24,72 @@ def get_num_patches(grid_size: int, patch_radius: int, patch_prob: float, rng: n
     return max(1, min(proposed_patches, max_allowed))
 
 
+def _sample_patch_centers(
+    num_patches: int,
+    grid_size: int,
+    patch_radius: int,
+    rng: np.random.Generator
+) -> list[tuple[int,int]]:
+    
+    centers = []
+    tries = 0
+    max_tries = 10 * num_patches
+    min_dist = (MIN_SPACING_FACTOR * patch_radius) ** 2
+    euclid = lambda x1, y1, x2, y2: (x1 - x2)**2 + (y1 - y2)**2
+
+    while len(centers) < num_patches and tries < max_tries:
+        cx = int(rng.integers(patch_radius, grid_size - patch_radius))
+        cy = int(rng.integers(patch_radius, grid_size - patch_radius))
+        if all(euclid(cx, cy, x, y) >= min_dist for x, y in centers):
+            centers.append((cx, cy))
+        tries += 1
+
+    return centers
+
+
 def create_initial_fields(
+    grid_size: int,
+    patch_radius: int,
+    patch_prob: float,
+    rng: Optional[np.random.Generator] = None
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Creates initial fields for concentrations U and V with *independent* patches.
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+
+    # determine max patches
+    num_patches = _get_num_patches(grid_size, patch_radius, patch_prob, rng)
+
+    # start from uniform base
+    conc_u = np.ones((grid_size, grid_size), dtype=np.float32)
+    conc_v = np.zeros((grid_size, grid_size), dtype=np.float32)
+
+    # sample centers for U and for V independently
+    centers_u = _sample_patch_centers(num_patches, grid_size, patch_radius, rng)
+    centers_v = _sample_patch_centers(num_patches, grid_size, patch_radius, rng)
+
+    # helper grid for mask creation
+    Y, X = np.ogrid[:grid_size, :grid_size]
+    radius2 = patch_radius ** 2
+
+    # apply U‐patches
+    for cx, cy in centers_u:
+        inner_u = rng.uniform(0.35, 0.85)
+        mask = (X - cx)**2 + (Y - cy)**2 <= radius2
+        conc_u[mask] = inner_u
+
+    # apply V‐patches
+    for cx, cy in centers_v:
+        inner_v = rng.uniform(0.30, 0.60)
+        mask = (X - cx)**2 + (Y - cy)**2 <= radius2
+        conc_v[mask] = inner_v
+
+    return conc_u, conc_v
+
+
+def create_initial_fields_old(
     grid_size: int,
     patch_radius: int,
     patch_prob: float,
@@ -41,7 +106,7 @@ def create_initial_fields(
     Returns:
         Tuple[np.ndarray, np.ndarray]: U_init, V_init
     """
-    num_patches = get_num_patches(grid_size, patch_radius, patch_prob, rng)
+    num_patches = _get_num_patches(grid_size, patch_radius, patch_prob, rng)
 
     conc_u = np.ones((grid_size, grid_size), dtype=np.float32)
     conc_v = np.zeros((grid_size, grid_size), dtype=np.float32)
